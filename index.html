@@ -296,7 +296,7 @@
       <div class="day" id="ab-day"></div>
       <div class="time" id="ab-time"></div>
     </div>
-    <button class="btn btn-danger" id="ab-cancel-btn">Cancel my booking</button>
+    <button class="btn btn-primary" id="ab-cancel-btn">Cancel my booking</button>
     <p style="font-size: 12px; color: var(--muted); margin-top: 14px; text-align: center;">
       Want to reschedule? Cancel first, then pick a new time.
     </p>
@@ -308,7 +308,7 @@
   <div class="card">
     <div class="greeting" id="bp-greeting">Hey there 💪</div>
     <div class="greeting-email" id="bp-email"></div>
-    <p>Pick a date that works for you. Each block holds 7 people max.</p>
+    <p>Pick a date that works for you. Each block holds 10 people max.</p>
     <div class="blocks-list" id="blocks-list"></div>
   </div>
 </div>
@@ -394,6 +394,23 @@ function showToast(msg) {
 
 function firstName(name) {
   return (name || '').split(' ')[0] || 'there';
+}
+
+// Defensive helper: if slotTime got serialized as an ISO date string
+// (legacy bug where the cell was a Date object), extract a clean time string.
+function cleanTime(s) {
+  if (!s) return '';
+  const str = s.toString();
+  // ISO date detected — pull out HH:MM and convert to AM/PM
+  const isoMatch = str.match(/T(\d{2}):(\d{2})/);
+  if (isoMatch) {
+    let h = parseInt(isoMatch[1], 10);
+    const m = isoMatch[2];
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${m} ${ampm}`;
+  }
+  return str;
 }
 
 async function api(action, params) {
@@ -542,7 +559,7 @@ async function init() {
     if (res.ok && res.existing) {
       const e = res.existing;
       document.getElementById('ab-day').textContent = e.blockDateLabel;
-      document.getElementById('ab-time').textContent = `at ${e.slotTime}`;
+      document.getElementById('ab-time').textContent = `at ${cleanTime(e.slotTime)}`;
       document.getElementById('ab-cancel-btn').onclick = () => cancelExistingBooking();
       showState('already-booked');
       return;
@@ -556,7 +573,7 @@ async function init() {
   try {
     const res = await api('schedule');
     if (!res.ok) throw new Error(res.error || 'Failed to load schedule.');
-    blocks = res.blocks || [];
+    blocks = res.schedule || [];
     renderBlocks();
     showState('blocks');
   } catch (err) {
