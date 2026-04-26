@@ -556,7 +556,7 @@ async function init() {
   try {
     const res = await api('schedule');
     if (!res.ok) throw new Error(res.error || 'Failed to load schedule.');
-    blocks = res.schedule || [];
+    blocks = res.blocks || [];
     renderBlocks();
     showState('blocks');
   } catch (err) {
