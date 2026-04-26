@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOPA CrossFit — InBody Scan Booking</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #ffffff;
+    --paper-2: #fafafa;
+    --accent: #ee5a24;
+    --accent-deep: #c94315;
+    --accent-soft: #fff1ec;
+    --good: #2d7a3f;
+    --good-soft: #ecf6ee;
+    --warn: #d97706;
+    --warn-soft: #fff4e6;
+    --danger: #d63333;
+    --danger-soft: #fff0f0;
+    --muted: #6b6b6b;
+    --line: #e6e6e6;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); font-family: 'Inter', sans-serif; min-height: 100vh; }
+  body { padding-bottom: 60px; }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 40px; }
+
+  /* HEADER */
+  header.topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 14px; border-bottom: 3px solid var(--ink);
+    margin-bottom: 22px;
+  }
+  .brand-text { font-family: 'Barlow Condensed'; line-height: 0.95; }
+  .brand-text .name {
+    font-size: 22px; font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+  .brand-text .name strong { color: var(--accent); }
+  .brand-text .tag {
+    font-family: 'Inter'; font-size: 8px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--muted);
+    text-transform: uppercase; margin-top: 2px;
+  }
+  .badge {
+    font-family: 'JetBrains Mono'; font-size: 10px;
+    background: var(--accent); color: white;
+    padding: 5px 9px; letter-spacing: 0.1em; text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  h1 {
+    font-family: 'Barlow Condensed';
+    font-size: 38px; font-weight: 900; letter-spacing: -0.01em;
+    margin: 0 0 4px; line-height: 1; text-transform: uppercase;
+  }
+  h1 .accent { color: var(--accent); }
+  .sub {
+    font-family: 'JetBrains Mono'; font-size: 11px;
+    color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+
+  /* STATES */
+  .state { display: none; animation: fadeIn 0.3s ease; }
+  .state.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card {
+    background: white; border: 2px solid var(--ink);
+    box-shadow: 5px 5px 0 var(--accent);
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+
+  .greeting {
+    font-family: 'Barlow Condensed';
+    font-size: 28px; font-weight: 800; line-height: 1;
+    margin: 0 0 4px; text-transform: uppercase;
+  }
+  .greeting-email {
+    font-family: 'JetBrains Mono'; font-size: 11px;
+    color: var(--muted); margin-bottom: 18px;
+  }
+
+  /* LOADING */
+  .spinner {
+    display: inline-block; width: 30px; height: 30px;
+    border: 3px solid var(--line); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin-bottom: 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: 'JetBrains Mono'; font-size: 11px;
+    color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase;
+  }
+
+  /* BLOCK CARDS */
+  .blocks-list { display: flex; flex-direction: column; gap: 10px; }
+  .block-card {
+    background: white; border: 2px solid var(--ink);
+    padding: 14px; cursor: pointer;
+    transition: all 0.1s; user-select: none;
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 10px; align-items: center;
+  }
+  .block-card:hover:not(.disabled) {
+    background: var(--accent-soft);
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--accent);
+  }
+  .block-card.disabled { background: var(--paper-2); cursor: not-allowed; opacity: 0.55; }
+  .block-card .day {
+    font-family: 'Barlow Condensed'; font-size: 18px; font-weight: 800;
+    text-transform: uppercase; line-height: 1;
+  }
+  .block-card .date {
+    font-family: 'JetBrains Mono'; font-size: 12px; color: var(--muted);
+    margin: 4px 0 6px;
+  }
+  .block-card .time {
+    font-family: 'JetBrains Mono'; font-size: 13px; font-weight: 600;
+  }
+  .block-card .capacity {
+    font-family: 'Barlow Condensed'; font-size: 13px;
+    text-align: right; line-height: 1.2;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .block-card .cap-num {
+    font-family: 'Barlow Condensed'; font-size: 24px; font-weight: 800;
+    color: var(--accent);
+  }
+  .block-card.disabled .cap-num { color: var(--muted); }
+  .block-card .full-tag {
+    font-family: 'JetBrains Mono'; font-size: 10px;
+    background: var(--ink); color: white; padding: 3px 7px;
+    letter-spacing: 0.1em;
+  }
+
+  /* SLOT PICKING */
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono'; font-size: 11px;
+    color: var(--muted); text-decoration: none; cursor: pointer;
+    margin-bottom: 14px; letter-spacing: 0.05em; text-transform: uppercase;
+    background: none; border: 0; padding: 0;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  .selected-block-summary {
+    background: var(--accent-soft); border-left: 4px solid var(--accent);
+    padding: 12px 14px; margin-bottom: 18px;
+  }
+  .selected-block-summary .day {
+    font-family: 'Barlow Condensed'; font-size: 22px;
+    font-weight: 800; text-transform: uppercase; line-height: 1;
+  }
+  .selected-block-summary .date {
+    font-family: 'JetBrains Mono'; font-size: 12px;
+    color: var(--muted); margin-top: 4px;
+  }
+
+  .slot-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 6px; margin-bottom: 18px;
+  }
+  .slot {
+    border: 2px solid var(--ink); padding: 10px 6px;
+    cursor: pointer; transition: all 0.1s; user-select: none;
+    background: white; text-align: center;
+    font-family: 'JetBrains Mono'; font-size: 12px; font-weight: 700;
+  }
+  .slot:hover:not(.taken):not(.selected) { background: var(--accent-soft); }
+  .slot.selected { background: var(--accent); color: white; }
+  .slot.taken {
+    background: var(--paper-2); color: var(--muted);
+    cursor: not-allowed; text-decoration: line-through;
+  }
+
+  /* BUTTONS */
+  .btn {
+    width: 100%; padding: 14px;
+    font-family: 'Barlow Condensed'; font-weight: 800;
+    font-size: 16px; letter-spacing: 0.05em;
+    text-transform: uppercase; cursor: pointer;
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: all 0.1s;
+  }
+  .btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--ink); }
+  .btn:disabled { background: var(--line); cursor: not-allowed; box-shadow: 4px 4px 0 var(--muted); }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-secondary { background: white; color: var(--ink); }
+  .btn-danger { background: var(--danger); color: white; }
+
+  /* SUCCESS */
+  .success-icon {
+    width: 60px; height: 60px; margin: 0 auto 16px;
+    background: var(--good); color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 800;
+  }
+  .booking-detail {
+    background: var(--good-soft); border-left: 4px solid var(--good);
+    padding: 14px 16px; margin: 18px 0;
+  }
+  .booking-detail .day {
+    font-family: 'Barlow Condensed'; font-size: 22px;
+    font-weight: 800; text-transform: uppercase;
+  }
+  .booking-detail .time {
+    font-family: 'JetBrains Mono'; font-size: 14px;
+    color: var(--muted); margin-top: 4px;
+  }
+
+  /* ERROR / INFO */
+  .info-box {
+    padding: 14px 16px; margin: 12px 0;
+    border-left: 4px solid;
+    font-size: 14px; line-height: 1.5;
+  }
+  .info-error { background: var(--danger-soft); border-color: var(--danger); }
+  .info-warn { background: var(--warn-soft); border-color: var(--warn); }
+  .info-good { background: var(--good-soft); border-color: var(--good); }
+  .info-box .info-title {
+    font-weight: 700; margin-bottom: 4px;
+    font-family: 'Barlow Condensed'; font-size: 16px;
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed; top: 20px; left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--danger); color: white;
+    padding: 12px 20px; font-size: 14px;
+    font-family: 'Inter'; font-weight: 600;
+    border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink);
+    z-index: 100; transition: transform 0.3s;
+    max-width: 90%; text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="topbar">
+  <div class="brand-text">
+    <div class="name"><strong>KOPA</strong> CrossFit</div>
+    <div class="tag">InBody Scan Booking</div>
+  </div>
+  <div class="badge">FREE</div>
+</header>
+
+<!-- LOADING -->
+<div class="state active" id="state-loading">
+  <div class="card" style="text-align: center;">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading your booking page...</div>
+  </div>
+</div>
+
+<!-- NO PARAMS -->
+<div class="state" id="state-no-params">
+  <div class="card">
+    <h1>MISSING <span class="accent">LINK INFO</span></h1>
+    <p>This booking page should be opened from the link sent to your member email.</p>
+    <p>Check your inbox for the most recent message from KOPA CrossFit, or contact the gym.</p>
+  </div>
+</div>
+
+<!-- NOT ELIGIBLE -->
+<div class="state" id="state-not-eligible">
+  <div class="card">
+    <div class="greeting" id="ne-greeting">Hey there</div>
+    <div class="info-box info-warn">
+      <div class="info-title">Not eligible right now</div>
+      <div id="ne-message"></div>
+    </div>
+    <p style="font-size: 13px; color: var(--muted);">If you think this is wrong, please contact the gym.</p>
+  </div>
+</div>
+
+<!-- ALREADY BOOKED -->
+<div class="state" id="state-already-booked">
+  <div class="card">
+    <div class="greeting" id="ab-greeting">Hey there</div>
+    <p>You already have an InBody scan booked:</p>
+    <div class="booking-detail">
+      <div class="day" id="ab-day"></div>
+      <div class="time" id="ab-time"></div>
+    </div>
+    <button class="btn btn-danger" id="ab-cancel-btn">Cancel my booking</button>
+    <p style="font-size: 12px; color: var(--muted); margin-top: 14px; text-align: center;">
+      Want to reschedule? Cancel first, then pick a new time.
+    </p>
+  </div>
+</div>
+
+<!-- BLOCK PICKER -->
+<div class="state" id="state-blocks">
+  <div class="card">
+    <div class="greeting" id="bp-greeting">Hey there 💪</div>
+    <div class="greeting-email" id="bp-email"></div>
+    <p>Pick a date that works for you. Each block holds 10 people max.</p>
+    <div class="blocks-list" id="blocks-list"></div>
+  </div>
+</div>
+
+<!-- SLOT PICKER -->
+<div class="state" id="state-slots">
+  <button class="back-link" onclick="showState('blocks')">← Back to dates</button>
+  <div class="card">
+    <div class="selected-block-summary">
+      <div class="day" id="sp-day"></div>
+      <div class="date" id="sp-date"></div>
+    </div>
+    <p>Pick a time slot:</p>
+    <div class="slot-grid" id="slot-grid"></div>
+    <button class="btn btn-primary" id="sp-confirm-btn" disabled>Confirm booking →</button>
+  </div>
+</div>
+
+<!-- SUBMITTING -->
+<div class="state" id="state-submitting">
+  <div class="card" style="text-align: center;">
+    <div class="spinner"></div>
+    <div class="loading-text">Booking your scan...</div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div class="state" id="state-success">
+  <div class="card">
+    <div style="text-align: center;">
+      <div class="success-icon">✓</div>
+      <h1>YOU'RE <span class="accent">BOOKED</span></h1>
+      <p style="font-size: 14px; color: var(--muted); margin-top: 6px;">See you then, <span id="su-name">friend</span>!</p>
+    </div>
+    <div class="booking-detail">
+      <div class="day" id="su-day"></div>
+      <div class="time" id="su-time"></div>
+    </div>
+    <button class="btn btn-secondary" onclick="window.location.reload()">Done</button>
+  </div>
+  <p style="font-size: 12px; color: var(--muted); text-align: center;">
+    Need to cancel later? Just open this same link again.
+  </p>
+</div>
+
+</div>
+
+<div class="toast" id="toast">Error</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyC-CsxfdVuGmLQh6lXdV-wlJoSVhH5lKPZSnC_uy2q9FCHhxiqyDjtNrRWYfD-S5D0_g/exec';
+
+// ============================================================
+// STATE
+// ============================================================
+
+let userEmail = '';
+let userName = '';
+let blocks = [];
+let selectedBlock = null;
+let selectedSlot = null;
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function showState(id) {
+  document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+  document.getElementById('state-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4500);
+}
+
+function firstName(name) {
+  return (name || '').split(' ')[0] || 'there';
+}
+
+async function api(action, params) {
+  const url = BACKEND_URL + '?action=' + action +
+              (params ? '&' + new URLSearchParams(params).toString() : '');
+  const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+  return await res.json();
+}
+
+async function apiPost(payload) {
+  const res = await fetch(BACKEND_URL, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+  });
+  return await res.json();
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+
+function renderBlocks() {
+  const list = document.getElementById('blocks-list');
+  list.innerHTML = '';
+  if (blocks.length === 0) {
+    list.innerHTML = '<p style="color: var(--muted);">No upcoming scan dates available right now. Check back soon.</p>';
+    return;
+  }
+  blocks.forEach(b => {
+    const card = document.createElement('div');
+    card.className = 'block-card' + (b.remaining <= 0 ? ' disabled' : '');
+    card.innerHTML = `
+      <div>
+        <div class="day">${b.dayName}</div>
+        <div class="date">${b.dateLabel}</div>
+        <div class="time">${b.start} – ${b.end}</div>
+      </div>
+      <div class="capacity">
+        ${b.remaining > 0
+          ? `<div class="cap-num">${b.remaining}</div><div>spots left</div>`
+          : `<div class="full-tag">FULL</div>`}
+      </div>
+    `;
+    if (b.remaining > 0) {
+      card.addEventListener('click', () => selectBlock(b));
+    }
+    list.appendChild(card);
+  });
+}
+
+function selectBlock(block) {
+  selectedBlock = block;
+  selectedSlot = null;
+  document.getElementById('sp-day').textContent = block.dayName;
+  document.getElementById('sp-date').textContent =
+    `${block.dateLabel} · ${block.start}–${block.end} · ${block.remaining} spots remaining`;
+  renderSlots();
+  showState('slots');
+}
+
+function renderSlots() {
+  const grid = document.getElementById('slot-grid');
+  grid.innerHTML = '';
+  selectedBlock.slots.forEach(slot => {
+    const isTaken = selectedBlock.takenSlots.includes(slot);
+    const el = document.createElement('div');
+    el.className = 'slot' + (isTaken ? ' taken' : '');
+    el.textContent = slot;
+    if (!isTaken) {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.slot.selected').forEach(s => s.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedSlot = slot;
+        document.getElementById('sp-confirm-btn').disabled = false;
+      });
+    }
+    grid.appendChild(el);
+  });
+}
+
+// ============================================================
+// FLOW
+// ============================================================
+
+async function init() {
+  // Validate backend URL is configured
+  if (BACKEND_URL.indexOf('PASTE_YOUR') >= 0) {
+    document.getElementById('state-no-params').innerHTML = `
+      <div class="card">
+        <h1>SETUP <span class="accent">INCOMPLETE</span></h1>
+        <p>The backend URL hasn't been configured yet. Edit the HTML file and replace PASTE_YOUR_INBODY_BACKEND_URL_HERE with your Apps Script web app URL.</p>
+      </div>
+    `;
+    showState('no-params');
+    return;
+  }
+
+  // Parse URL params
+  const params = new URLSearchParams(window.location.search);
+  userEmail = (params.get('email') || '').trim();
+  userName = (params.get('name') || '').trim();
+
+  if (!userEmail) {
+    showState('no-params');
+    return;
+  }
+
+  // Greet
+  const fn = firstName(userName);
+  document.getElementById('bp-greeting').textContent = `Hey ${fn} 💪`;
+  document.getElementById('bp-email').textContent = userEmail;
+  document.getElementById('ne-greeting').textContent = `Hey ${fn}`;
+  document.getElementById('ab-greeting').textContent = `Hey ${fn}`;
+
+  // Check eligibility first
+  let eligibility;
+  try {
+    const res = await api('eligibility', { email: userEmail });
+    if (!res.ok) throw new Error(res.error || 'Eligibility check failed.');
+    eligibility = res.eligibility;
+  } catch (err) {
+    showToast('Could not connect: ' + err.message);
+    showState('no-params');
+    return;
+  }
+
+  if (!eligibility.eligible) {
+    document.getElementById('ne-message').textContent = eligibility.message;
+    showState('not-eligible');
+    return;
+  }
+
+  // Use the canonical name from the member roster if we have one
+  if (eligibility.name) {
+    userName = eligibility.name;
+    const fn2 = firstName(userName);
+    document.getElementById('bp-greeting').textContent = `Hey ${fn2} 💪`;
+    document.getElementById('ab-greeting').textContent = `Hey ${fn2}`;
+  }
+
+  // Check for existing booking
+  try {
+    const res = await api('existing', { email: userEmail });
+    if (res.ok && res.existing) {
+      const e = res.existing;
+      document.getElementById('ab-day').textContent = e.blockDateLabel;
+      document.getElementById('ab-time').textContent = `at ${e.slotTime}`;
+      document.getElementById('ab-cancel-btn').onclick = () => cancelExistingBooking();
+      showState('already-booked');
+      return;
+    }
+  } catch (err) {
+    // Non-fatal; just proceed to block list
+    console.warn('Existing booking check failed:', err);
+  }
+
+  // Load blocks
+  try {
+    const res = await api('schedule');
+    if (!res.ok) throw new Error(res.error || 'Failed to load schedule.');
+    blocks = res.schedule || [];
+    renderBlocks();
+    showState('blocks');
+  } catch (err) {
+    showToast('Could not load schedule: ' + err.message);
+    showState('no-params');
+  }
+}
+
+async function confirmBooking() {
+  if (!selectedBlock || !selectedSlot) return;
+  const btn = document.getElementById('sp-confirm-btn');
+  btn.disabled = true;
+  showState('submitting');
+
+  try {
+    const res = await apiPost({
+      action: 'book',
+      email: userEmail,
+      name: userName,
+      blockId: selectedBlock.id,
+      slotTime: selectedSlot,
+    });
+    if (!res.ok) throw new Error(res.error || 'Booking failed.');
+
+    const b = res.booking;
+    document.getElementById('su-name').textContent = firstName(userName);
+    document.getElementById('su-day').textContent = selectedBlock.dayName + ', ' + selectedBlock.dateLabel;
+    document.getElementById('su-time').textContent = `at ${b.slotTime}`;
+    showState('success');
+  } catch (err) {
+    showToast(err.message);
+    btn.disabled = false;
+    showState('slots');
+  }
+}
+
+async function cancelExistingBooking() {
+  if (!confirm('Cancel your scan booking?')) return;
+  showState('submitting');
+  try {
+    const res = await apiPost({ action: 'cancel', email: userEmail });
+    if (!res.ok) throw new Error(res.error || 'Cancellation failed.');
+    // After cancel, reload to show the block picker
+    window.location.reload();
+  } catch (err) {
+    showToast(err.message);
+    showState('already-booked');
+  }
+}
+
+// Wire up confirm button
+document.getElementById('sp-confirm-btn').addEventListener('click', confirmBooking);
+
+// Start
+init();
+</script>
+</body>
+</html>
