@@ -308,7 +308,7 @@
   <div class="card">
     <div class="greeting" id="bp-greeting">Hey there 💪</div>
     <div class="greeting-email" id="bp-email"></div>
-    <p>Pick a date that works for you. Each block holds 10 people max.</p>
+    <p>Pick a date that works for you. Each block holds 7 people max.</p>
     <div class="blocks-list" id="blocks-list"></div>
   </div>
 </div>
@@ -573,7 +573,7 @@ async function init() {
   try {
     const res = await api('schedule');
     if (!res.ok) throw new Error(res.error || 'Failed to load schedule.');
-    blocks = res.schedule || [];
+    blocks = res.blocks || [];
     renderBlocks();
     showState('blocks');
   } catch (err) {
