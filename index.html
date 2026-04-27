@@ -308,7 +308,7 @@
   <div class="card">
     <div class="greeting" id="bp-greeting">Hey there 💪</div>
     <div class="greeting-email" id="bp-email"></div>
-    <p>Pick a date that works for you. Each block holds 10 people max.</p>
+    <p>Pick a date that works for you.</p>
     <div class="blocks-list" id="blocks-list"></div>
   </div>
 </div>
@@ -451,9 +451,7 @@ function renderBlocks() {
         <div class="time">${b.start} – ${b.end}</div>
       </div>
       <div class="capacity">
-        ${b.remaining > 0
-          ? `<div class="cap-num">${b.remaining}</div><div>spots left</div>`
-          : `<div class="full-tag">FULL</div>`}
+        ${b.remaining <= 0 ? `<div class="full-tag">FULL</div>` : ''}
       </div>
     `;
     if (b.remaining > 0) {
@@ -468,7 +466,7 @@ function selectBlock(block) {
   selectedSlot = null;
   document.getElementById('sp-day').textContent = block.dayName;
   document.getElementById('sp-date').textContent =
-    `${block.dateLabel} · ${block.start}–${block.end} · ${block.remaining} spots remaining`;
+    `${block.dateLabel} · ${block.start}–${block.end}`;
   renderSlots();
   showState('slots');
 }
@@ -520,66 +518,52 @@ async function init() {
     return;
   }
 
-  // Greet
+  // Greet (initial pass — may be refined once we get the canonical name back)
   const fn = firstName(userName);
   document.getElementById('bp-greeting').textContent = `Hey ${fn} 💪`;
   document.getElementById('bp-email').textContent = userEmail;
   document.getElementById('ne-greeting').textContent = `Hey ${fn}`;
   document.getElementById('ab-greeting').textContent = `Hey ${fn}`;
 
-  // Check eligibility first
-  let eligibility;
+  // Single round-trip: eligibility + existing booking + schedule.
+  let bootstrap;
   try {
-    const res = await api('eligibility', { email: userEmail });
-    if (!res.ok) throw new Error(res.error || 'Eligibility check failed.');
-    eligibility = res.eligibility;
+    const res = await api('bootstrap', { email: userEmail });
+    if (!res.ok) throw new Error(res.error || 'Could not load.');
+    bootstrap = res;
   } catch (err) {
     showToast('Could not connect: ' + err.message);
     showState('no-params');
     return;
   }
 
-  if (!eligibility.eligible) {
-    document.getElementById('ne-message').textContent = eligibility.message;
+  // Use the canonical name from the member roster if we have one
+  if (bootstrap.eligibility && bootstrap.eligibility.name) {
+    userName = bootstrap.eligibility.name;
+    const fn2 = firstName(userName);
+    document.getElementById('bp-greeting').textContent = `Hey ${fn2} 💪`;
+    document.getElementById('ab-greeting').textContent = `Hey ${fn2}`;
+    document.getElementById('ne-greeting').textContent = `Hey ${fn2}`;
+  }
+
+  if (!bootstrap.eligibility.eligible) {
+    document.getElementById('ne-message').textContent = bootstrap.eligibility.message;
     showState('not-eligible');
     return;
   }
 
-  // Use the canonical name from the member roster if we have one
-  if (eligibility.name) {
-    userName = eligibility.name;
-    const fn2 = firstName(userName);
-    document.getElementById('bp-greeting').textContent = `Hey ${fn2} 💪`;
-    document.getElementById('ab-greeting').textContent = `Hey ${fn2}`;
+  if (bootstrap.existing) {
+    const e = bootstrap.existing;
+    document.getElementById('ab-day').textContent = e.blockDateLabel;
+    document.getElementById('ab-time').textContent = `at ${cleanTime(e.slotTime)}`;
+    document.getElementById('ab-cancel-btn').onclick = () => cancelExistingBooking();
+    showState('already-booked');
+    return;
   }
 
-  // Check for existing booking
-  try {
-    const res = await api('existing', { email: userEmail });
-    if (res.ok && res.existing) {
-      const e = res.existing;
-      document.getElementById('ab-day').textContent = e.blockDateLabel;
-      document.getElementById('ab-time').textContent = `at ${cleanTime(e.slotTime)}`;
-      document.getElementById('ab-cancel-btn').onclick = () => cancelExistingBooking();
-      showState('already-booked');
-      return;
-    }
-  } catch (err) {
-    // Non-fatal; just proceed to block list
-    console.warn('Existing booking check failed:', err);
-  }
-
-  // Load blocks
-  try {
-    const res = await api('schedule');
-    if (!res.ok) throw new Error(res.error || 'Failed to load schedule.');
-    blocks = res.blocks || [];
-    renderBlocks();
-    showState('blocks');
-  } catch (err) {
-    showToast('Could not load schedule: ' + err.message);
-    showState('no-params');
-  }
+  blocks = bootstrap.blocks || [];
+  renderBlocks();
+  showState('blocks');
 }
 
 async function confirmBooking() {
